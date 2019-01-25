@@ -114,6 +114,10 @@ void GyroReport(void)
       
 }
 /*********************************************************************/
+/*
+ * Old Reporting
+ */
+/*
 void Report(void)
 {
       static FILE *timefile,*DynTimeFile;
@@ -268,15 +272,186 @@ void Report(void)
          }
 
       }
-
+*/
       /* An example how to call specialized reporting based on sim case */
       /* if (!strcmp(InOutPath,"./Potato/")) PotatoReport(); */
       
+/*
+      if (CleanUpFlag) {
+         fclose(timefile);
+      }
+*/
+/*
+}
+*/
+void Report(void)
+{
+      static FILE *timefile,*DynTimeFile;
+      static FILE **xfile, **ufile, **xffile, **uffile;
+      static FILE **ConstraintFile;
+      static FILE **PosNfile,**VelNfile,**qbnfile,**wbnfile;
+      //static FILE **PosWfile,**VelWfile;
+      //static FILE **PosRfile,**VelRfile;
+      static FILE **PosEHfile,**VelEHfile;
+      //static FILE **Hvnfile,**KEfile;
+      //static FILE **RPYfile;
+      //static FILE **Hwhlfile;
+      //static FILE **MTBfile;
+      //static FILE **ProjAreaFile;
+      static char First = TRUE;
+      long Isc,i;
+      struct DynType *D;
+      double CBL[3][3],Roll,Pitch,Yaw;
+      double PosW[3],VelW[3],PosR[3],VelR[3];
+      char s[40];
+      double ZAxis[3] = {0.0,0.0,1.0};
+
+      if (First) {
+         First = FALSE;
+         timefile = FileOpen(InOutPath,"time.42","w");
+         DynTimeFile = FileOpen(InOutPath,"DynTime.42","w");
+
+         ufile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         xfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         uffile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         xffile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         ConstraintFile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         PosNfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         VelNfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         qbnfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         wbnfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         //PosWfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         //VelWfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         //PosRfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         //VelRfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         PosEHfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         VelEHfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         /*
+         Hvnfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         KEfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         RPYfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         ProjAreaFile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         Hwhlfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         MTBfile = (FILE **) calloc(Nsc,sizeof(FILE *));
+         */
+         for(Isc=0;Isc<Nsc;Isc++) {
+            if (SC[Isc].Exists) {
+               sprintf(s,"u%02li.42",Isc);
+               ufile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"x%02li.42",Isc);
+               xfile[Isc] = FileOpen(InOutPath,s,"w");
+               if (SC[Isc].FlexActive) {
+                  sprintf(s,"uf%02li.42",Isc);
+                  uffile[Isc] = FileOpen(InOutPath,s,"w");
+                  sprintf(s,"xf%02li.42",Isc);
+                  xffile[Isc] = FileOpen(InOutPath,s,"w");
+               }
+               if (SC[Isc].ConstraintsRequested) {
+                  sprintf(s,"Constraint%02li.42",Isc);
+                  ConstraintFile[Isc] = FileOpen(InOutPath,s,"w");
+               }
+               sprintf(s,"PosN%02li.42",Isc);
+               PosNfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"VelN%02li.42",Isc);
+               VelNfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"qbn%02li.42",Isc);
+               qbnfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"wbn%02li.42",Isc);
+               wbnfile[Isc] = FileOpen(InOutPath,s,"w");
+               //sprintf(s,"PosW%02li.42",Isc);
+               //PosWfile[Isc] = FileOpen(InOutPath,s,"w");
+               //sprintf(s,"VelW%02li.42",Isc);
+               //VelWfile[Isc] = FileOpen(InOutPath,s,"w");
+               //sprintf(s,"PosR%02li.42",Isc);
+               //PosRfile[Isc] = FileOpen(InOutPath,s,"w");
+               //sprintf(s,"VelR%02li.42",Isc);
+               //VelRfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"PosEH%02li.42",Isc);
+               PosEHfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"VelEH%02li.42",Isc);
+               VelEHfile[Isc] = FileOpen(InOutPath,s,"w");
+               /*
+               sprintf(s,"Hvn%02li.42",Isc);
+               Hvnfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"KE%02li.42",Isc);
+               KEfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"ProjArea%02li.42",Isc);
+               ProjAreaFile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"RPY%02li.42",Isc);
+               RPYfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"Hwhl%02li.42",Isc);
+               Hwhlfile[Isc] = FileOpen(InOutPath,s,"w");
+               sprintf(s,"MTB%02li.42",Isc);
+               MTBfile[Isc] = FileOpen(InOutPath,s,"w");
+               */
+            }
+         }
+      }
+
+      if (OutFlag) {
+         fprintf(timefile,"%lf\n",SimTime);
+         fprintf(DynTimeFile,"%lf\n",DynTime);
+         for(Isc=0;Isc<Nsc;Isc++) {
+            if (SC[Isc].Exists) {
+               D = &SC[Isc].Dyn;
+               for(i=0;i<D->Nu;i++) fprintf(ufile[Isc],"% le ",D->u[i]);
+               fprintf(ufile[Isc],"\n");
+               for(i=0;i<D->Nx;i++) fprintf(xfile[Isc],"% le ",D->x[i]);
+               fprintf(xfile[Isc],"\n");
+               if (SC[Isc].FlexActive) {
+                  for(i=0;i<D->Nf;i++) fprintf(uffile[Isc],"% le ",D->uf[i]);
+                  fprintf(uffile[Isc],"\n");
+                  for(i=0;i<D->Nf;i++) fprintf(xffile[Isc],"% le ",D->xf[i]);
+                  fprintf(xffile[Isc],"\n");
+               }
+               if (SC[Isc].ConstraintsRequested) {
+                  for(i=0;i<D->Nc;i++)
+                     fprintf(ConstraintFile[Isc],"% le ",
+                             D->GenConstraintFrc[i]);
+                  fprintf(ConstraintFile[Isc],"\n");
+               }
+               fprintf(PosNfile[Isc],"%le %le %le\n",
+                  SC[Isc].PosN[0],SC[Isc].PosN[1],SC[Isc].PosN[2]);
+               fprintf(VelNfile[Isc],"%le %le %le\n",
+                  SC[Isc].VelN[0],SC[Isc].VelN[1],SC[Isc].VelN[2]);
+               //MxV(World[EARTH].CWN,SC[Isc].PosN,PosW);
+               //MxV(World[EARTH].CWN,SC[Isc].VelN,VelW);
+               //fprintf(PosWfile[Isc],"%18.12le %18.12le %18.12le ",
+               //   PosW[0],PosW[1],PosW[2]);
+               //fprintf(VelWfile[Isc],"%18.12le %18.12le %18.12le ",
+               //   VelW[0],VelW[1],VelW[2]);
+               //MxV(Rgn[Orb[SC[Isc].RefOrb].Region].CN,SC[Isc].PosR,PosR);
+               //MxV(Rgn[Orb[SC[Isc].RefOrb].Region].CN,SC[Isc].VelR,VelR);
+               //fprintf(PosRfile[Isc],"%le %le %le\n",
+               //   PosR[0],PosR[1],PosR[2]);
+               //fprintf(VelRfile[Isc],"%le %le %le\n",
+               //   VelR[0],VelR[1],VelR[2]);
+               fprintf(PosEHfile[Isc],"%le %le %le\n",
+                  -SC[Isc].PosEH[2],SC[Isc].PosEH[0],-SC[Isc].PosEH[1]);
+               fprintf(VelEHfile[Isc],"%le %le %le\n",
+                  -SC[Isc].VelEH[2],SC[Isc].VelEH[0],-SC[Isc].VelEH[1]);
+               //fprintf(qbnfile[Isc],"%le %le %le %le\n",
+               //   SC[Isc].B[0].qn[0],SC[Isc].B[0].qn[1],SC[Isc].B[0].qn[2],SC[Isc].B[0].qn[3]);
+               //fprintf(wbnfile[Isc],"%le %le %le\n",
+               //   SC[Isc].B[0].wn[0],SC[Isc].B[0].wn[1],SC[Isc].B[0].wn[2]);
+               //fprintf(Hvnfile[Isc],"%18.12le %18.12le %18.12le\n",
+               //   SC[Isc].Hvn[0],SC[Isc].Hvn[1],SC[Isc].Hvn[2]);
+               //fprintf(KEfile[Isc],"%18.12le\n",FindTotalKineticEnergy(&SC[Isc]));
+               //fprintf(ProjAreaFile,"%18.12le %18.12le\n",
+               //   FindTotalProjectedArea(&SC[Isc],ZAxis),
+               //   FindTotalUnshadedProjectedArea(&SC[Isc],ZAxis));
+               //MxMT(SC[Isc].B[0].CN,SC[Isc].CLN,CBL);
+               //C2A(123,CBL,&Roll,&Pitch,&Yaw);
+               //fprintf(RPYfile[Isc],"%lf %lf %lf\n",Roll*R2D,Pitch*R2D,Yaw*R2D);
+               //fprintf(Hwhlfile[Isc],"%lf %lf %lf\n",SC[Isc].Whl[0].H,SC[Isc].Whl[1].H,SC[Isc].Whl[2].H);
+               //fprintf(MTBfile[Isc],"%lf %lf %lf\n",SC[Isc].MTB[0].M,SC[Isc].MTB[1].M,SC[Isc].MTB[2].M);
+            }
+         }
+      }     
 
       if (CleanUpFlag) {
          fclose(timefile);
       }
-
 }
 
 /* #ifdef __cplusplus
